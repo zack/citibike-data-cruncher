@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "type": "module",
   "devDependencies": {
-    "csv": "^6.3.3",
-    "ascii-progress": "^2.0.0",
     "@types/node": "^20.6.1",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
+    "ascii-progress": "^2.0.0",
+    "csv": "^6.3.3",
     "eslint": "^8.49.0",
     "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "tsx": "^3.12.10"
   }
 }
