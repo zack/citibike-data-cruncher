@@ -3,7 +3,11 @@
 ## Purpose
 This program will consume [Citibike trip
 data](https://s3.amazonaws.com/tripdata/index.html) and create a friendly CSV
-showing trips (start or end) in each month of the dataset.
+showing trips (start or end) in each month of the dataset. The results will
+show the number of uses of each dock per month. It will count as a usage if the
+dock is either the start or end of a trip. It will count twice if it is both
+the start and end of the trip. In my test data, that is a very minimal number
+of trips.
 
 ## How to use it
 1. Clone the repo
