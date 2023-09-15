@@ -1,4 +1,4 @@
-import fs from 'fs';
+import * as fs from 'fs';
 import { parse, stringify } from 'csv';
 import { ProgressBar } from 'ascii-progress';
 import { exec } from 'child_process';
@@ -63,11 +63,17 @@ const STATIONS = {
   '3928.08': true,
 };
 
-const stationData = {};
+type StationData = {
+  [index: string]: { // station name
+    id: string
+    data: { [index: string]: number },
+  },
+}
+const stationData: StationData = {};
 
-let filesRemaining;
+let filesRemaining = -1;
 
-function addStationToData(id, name, dateStr) {
+function addStationToData(id: string, name: string, dateStr: string) {
   if (stationData[name] === undefined) {
     stationData[name] = { id, data: {}};
     stationData[name].data[dateStr] = 1;
@@ -82,7 +88,7 @@ function randomColor() {
   return '#'+Math.floor(Math.random()*16777215).toString(16);
 }
 
-function writeCsv(stationData, dates) {
+function writeCsv(stationData: StationData, dates: string[]) {
   const columns = [
     'station_id',
     'station_name',
@@ -95,15 +101,19 @@ function writeCsv(stationData, dates) {
   });
 
   stringify(stationDataArray, { header: true, columns }, (e, o) => {
-    fs.writeFileSync("output.csv", o)
+    fs.writeFileSync('output.csv', o);
   });
 }
 
-function processFiles(files) {
-  const dates = [];
+function processFiles(files: { [index: string]: number }) {
+  const dates: string[] = [];
 
   Object.keys(files).forEach(file => {
-    const date = /\d{6}/.exec(file)[0];
+    const dateMatch = /\d{6}/.exec(file);
+    if (dateMatch === null) {
+      throw Error('something went wrong with the date');
+    }
+    const date = dateMatch[0];
     const year= date.slice(0,4);
     const month = date.slice(4,6);
     const dateStr = `${year}-${month}`;
@@ -117,37 +127,37 @@ function processFiles(files) {
 
     fs.createReadStream(file)
       .pipe(parse({ delimiter: ',', columns: true }))
-      .on('data', function (row) {
-        if (STATIONS[row.start_station_id]) {
-          addStationToData(row.start_station_id, row.start_station_name, dateStr);
+      .on('data', function (
+        { start_station_id, start_station_name, end_station_id, end_station_name }:
+          {start_station_name: string, start_station_id: string, end_station_id: string, end_station_name: string }
+      ) {
+        if (start_station_id in STATIONS) {
+          addStationToData(start_station_id, start_station_name, dateStr);
         }
 
-        if (STATIONS[row.end_station_id]) {
-          addStationToData(row.end_station_id, row.end_station_name, dateStr);
+        if (end_station_id in STATIONS) {
+          addStationToData(end_station_id, end_station_name, dateStr);
         }
 
         progressBar.tick();
       })
       .on('end', function() {
         filesRemaining -= 1;
+
         if (filesRemaining === 0) {
           writeCsv(stationData, dates);
         }
       });
-  })
+  });
 }
 
-exec(`wc -l ./data/*`, (error, stdout, stderr) => {
-  let total;
-
+exec('wc -l ./data/*', (error, stdout) => {
   const lines = stdout.split('\n').map(l => l.trim().split(' ')).filter(l => {
-    if (l.length < 2) { return false}
-    if (l[1] === 'total') { total = l[0]; return false }
-    return true;
+    return (l.length === 2 && l[1] !== 'total');
   });
 
   filesRemaining = lines.length;
-  const files = {};
+  const files: { [index: string]: number } = {};
   lines.forEach(line => files[line[1]] = parseInt(line[0]));
 
   processFiles(files);

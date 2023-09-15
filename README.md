@@ -17,7 +17,7 @@ of trips.
 1. Dowload the months you're interested in from
    [here](https://s3.amazonaws.com/tripdata/index.html), unzip them, and put
    the csvs in the `data` directory.
-1. `node runner.js`
+1. `npx tsx runner.js`
   1. This will take anywhere from a few minutes to an hour depending on how
      fast your computer is and how many files you're crunching. It can be a lot
      of data.
