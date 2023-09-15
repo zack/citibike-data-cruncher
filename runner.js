@@ -112,8 +112,16 @@ function processFiles(files) {
 }
 
 exec(`wc -l ./data/*`, (error, stdout, stderr) => {
-  const lines = stdout.split('\n').map(l => l.trim().split(' ')).slice(1,-2);
+  let total;
+
+  const lines = stdout.split('\n').map(l => l.trim().split(' ')).filter(l => {
+    if (l.length < 2) { return false}
+    if (l[1] === 'total') { total = l[0]; return false }
+    return true;
+  });
+
   const files = {};
   lines.forEach(line => files[line[1]] = parseInt(line[0]));
+
   processFiles(files);
 });
