@@ -83,9 +83,6 @@ function randomColor() {
 }
 
 function writeCsv(stationData, dates) {
-  const filename = "station_data.csv";
-  const writableStream = fs.createWriteStream(filename);
-
   const columns = [
     'station_id',
     'station_name',
