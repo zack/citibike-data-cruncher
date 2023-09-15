@@ -1,9 +1,9 @@
 import fs from 'fs';
-import { parse } from 'csv';
+import { parse, stringify } from 'csv';
 import { ProgressBar } from 'ascii-progress';
-import { exec, execSync } from 'child_process';
+import { exec } from 'child_process';
 
-const CB9_STATIONS = {
+const STATIONS = {
   '3400.04': true,
   '3439.03': true,
   '3448.02': true,
@@ -63,16 +63,18 @@ const CB9_STATIONS = {
   '3928.08': true,
 };
 
-const station_data = {};
+const stationData = {};
 
-function add_station_to_data(id, name, dateStr) {
-  if (station_data[name] === undefined) {
-    station_data[name] = { id, data: {}};
-    station_data[name].data[dateStr] = 1;
-  } else if (station_data[name].data[dateStr] === undefined) {
-    station_data[name].data[dateStr] = 1;
+let filesRemaining;
+
+function addStationToData(id, name, dateStr) {
+  if (stationData[name] === undefined) {
+    stationData[name] = { id, data: {}};
+    stationData[name].data[dateStr] = 1;
+  } else if (stationData[name].data[dateStr] === undefined) {
+    stationData[name].data[dateStr] = 1;
   } else {
-    station_data[name].data[dateStr] += 1;
+    stationData[name].data[dateStr] += 1;
   }
 }
 
@@ -80,12 +82,36 @@ function randomColor() {
   return '#'+Math.floor(Math.random()*16777215).toString(16);
 }
 
+function writeCsv(stationData, dates) {
+  const filename = "station_data.csv";
+  const writableStream = fs.createWriteStream(filename);
+
+  const columns = [
+    'station_id',
+    'station_name',
+    ...dates
+  ];
+
+  const stationDataArray = Object.keys(stationData).map(stationName => {
+    const station = stationData[stationName];
+    return({station_id: station.id, station_name: stationName, ...station.data});
+  });
+
+  stringify(stationDataArray, { header: true, columns }, (e, o) => {
+    fs.writeFileSync("output.csv", o)
+  });
+}
+
 function processFiles(files) {
+  const dates = [];
+
   Object.keys(files).forEach(file => {
     const date = /\d{6}/.exec(file)[0];
     const year= date.slice(0,4);
     const month = date.slice(4,6);
     const dateStr = `${year}-${month}`;
+
+    dates.push(dateStr);
 
     const progressBar = new ProgressBar({
       schema: `[${dateStr}].bold[:bar.gradient(${randomColor()},${randomColor()})][:percent].bold`,
@@ -95,18 +121,21 @@ function processFiles(files) {
     fs.createReadStream(file)
       .pipe(parse({ delimiter: ',', columns: true }))
       .on('data', function (row) {
-        if (CB9_STATIONS[row.start_station_id]) {
-          add_station_to_data(row.start_station_id, row.start_station_name, dateStr);
+        if (STATIONS[row.start_station_id]) {
+          addStationToData(row.start_station_id, row.start_station_name, dateStr);
         }
 
-        if (CB9_STATIONS[row.end_station_id]) {
-          add_station_to_data(row.end_station_id, row.end_station_name, dateStr);
+        if (STATIONS[row.end_station_id]) {
+          addStationToData(row.end_station_id, row.end_station_name, dateStr);
         }
 
         progressBar.tick();
       })
       .on('end', function() {
-        console.log(station_data);
+        filesRemaining -= 1;
+        if (filesRemaining === 0) {
+          writeCsv(stationData, dates);
+        }
       });
   })
 }
@@ -120,6 +149,7 @@ exec(`wc -l ./data/*`, (error, stdout, stderr) => {
     return true;
   });
 
+  filesRemaining = lines.length;
   const files = {};
   lines.forEach(line => files[line[1]] = parseInt(line[0]));
 
