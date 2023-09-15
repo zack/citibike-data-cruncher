@@ -11,7 +11,8 @@ of trips.
 
 ## How to use it
 1. Clone the repo
-1. `npm install`
+1. [Install node and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+1. `npm ci` ([?](https://docs.npmjs.com/cli/v9/commands/npm-ci)) the dependencies.
 1. Replace the station ids in the script with the ones you're interested in
   1. You can find them [here](https://citibikenyc.com/explore)
 1. Dowload the months you're interested in from
