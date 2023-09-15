@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "ascii-progress": "^2.0.0",
+    "csv": "^6.3.3"
+  }
+}
